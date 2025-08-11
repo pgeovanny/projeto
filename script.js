@@ -175,14 +175,36 @@ async function refreshStats(){
   }catch(e){ console.warn("[PG] stats fail", e); }
 }
 
-/* ===== Votação pós-amostra ===== */
+/* ===== Votação pós-amostra (com animação e confirmação) ===== */
 function wireVoting(){
   const modal = $("#vote-modal"), form = $("#vote-form"), txt = $("#vote-text"), cancel = $("#vote-cancel");
   if(!modal) return;
+
+  // cria/obtém área de status (spinner / mensagens)
+  let statusEl = modal.querySelector(".status");
+  if (!statusEl) {
+    statusEl = document.createElement("div");
+    statusEl.className = "status is-hidden";
+    form.parentElement.appendChild(statusEl); // abaixo do form
+  }
+
   let pending=null, timer=null;
-  const open=()=>show(modal), close=()=>{ hide(modal); hide(form); txt.value=""; pending=null; };
+  const open=()=>show(modal);
+  const close=()=>{ hide(modal); hide(form); hide(statusEl); txt.value=""; pending=null; resetSubmit(); };
+
   if(cancel) cancel.onclick=close;
   modal.addEventListener("click",e=>{ if(e.target===modal) close(); });
+
+  // botão submit (para animar)
+  const submitBtn = form.querySelector('button[type="submit"]');
+  function setLoading(){
+    if (submitBtn){ submitBtn.classList.add("loading"); submitBtn.disabled = true; submitBtn.dataset.label = submitBtn.textContent; submitBtn.textContent = "Enviando..."; }
+    if (txt) txt.disabled = true;
+  }
+  function resetSubmit(){
+    if (submitBtn){ submitBtn.classList.remove("loading"); submitBtn.disabled = false; submitBtn.textContent = submitBtn.dataset.label || "Enviar"; }
+    if (txt) txt.disabled = false;
+  }
 
   $$('.pro-table__row [data-amostra]').forEach(a=>{
     a.addEventListener("click", ()=>{
@@ -205,13 +227,28 @@ function wireVoting(){
   $$("#vote-modal [data-vote]").forEach(btn=>{
     btn.onclick = ()=>{
       const vote = btn.getAttribute("data-vote");
-      show(form); txt.placeholder = vote==="like" ? "O que você mais gostou?" : "O que não curtiu no material?";
+      show(form);
+      txt.placeholder = vote==="like" ? "O que você mais gostou?" : "O que não curtiu no material?";
+
       form.onsubmit = async (e)=>{
         e.preventDefault(); if(!pending) return close();
+
+        // animação de envio
+        setLoading();
+        statusEl.innerHTML = `<span class="spinner"></span><span>Enviando voto...</span>`;
+        show(statusEl);
+
         try{
           await apiPost({ type:"vote", id:pending, vote, feedback: txt.value||"", session_id: sessionId(), user_agent: navigator.userAgent, referrer: document.referrer||"" });
-        }catch(e){ console.warn("[PG] vote fail", e); }
-        close(); refreshStats();
+          // sucesso
+          statusEl.innerHTML = `<span class="check">✓</span><span><b>Voto validado!</b></span>`;
+          statusEl.classList.add("ok");
+          setTimeout(()=>{ close(); refreshStats(); statusEl.classList.remove("ok"); }, 1200);
+        }catch(err){
+          statusEl.innerHTML = `<span class="error">!</span><span>Falha ao enviar. Tente novamente.</span>`;
+          statusEl.classList.remove("ok");
+          resetSubmit();
+        }
       };
     };
   });
