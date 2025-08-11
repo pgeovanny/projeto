@@ -43,7 +43,7 @@ body{
 .title h1{ margin:0; font-size:18px; font-weight:800; letter-spacing:.2px; }
 .tagline{ margin:2px 0 0; color:var(--muted); font-size:13px; }
 
-.menu{ margin-left:auto; position:relative; }
+.menu{ margin-left:auto; position:relative; z-index:20; }
 .menu-btn{
   all:unset; cursor:pointer; padding:12px 14px; border-radius:12px;
   border:1px solid var(--ring);
@@ -54,10 +54,10 @@ body{
 .menu-btn:hover{ background: rgba(255,255,255,.08); }
 .menu-btn:focus-visible{ outline:2px solid #9aa8ff; outline-offset:2px; }
 .menu-pop{
-  position:absolute; right:0; top:110%;
+  position:absolute; right:0; top:110%; z-index:30;
   min-width:260px; padding:8px;
   border-radius:14px; border:1px solid var(--ring);
-  background: linear-gradient(180deg, rgba(15,22,39,.9), rgba(10,15,27,.9));
+  background: linear-gradient(180deg, rgba(15,22,39,.95), rgba(10,15,27,.95));
   backdrop-filter: blur(16px) saturate(120%);
   box-shadow: var(--shadow);
   display:grid; gap:6px;
@@ -68,9 +68,32 @@ body{
 }
 .menu-item:hover{ background: rgba(255,255,255,.06); }
 
-.hint{ margin:14px 4px 0; color:var(--muted); font-size:13px; text-align:center; }
+/* WELCOME HERO */
+.welcome{
+  margin-top:14px; padding:20px;
+  text-align:center;
+}
+.welcome h2{
+  margin:0; font-size:20px; line-height:1.25; font-weight:800;
+  background: linear-gradient(90deg, var(--grad1), var(--grad2));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.welcome h2 span{ color: #e6ebff; background: none; -webkit-text-fill-color: initial; }
+.welcome p{ margin:8px 0 0; color:var(--muted); font-size:14px; }
 
 .links{ margin-top:14px; display:grid; gap:12px; }
+
+.toolbar{
+  display:flex; align-items:center; gap:8px; padding:10px 12px 0 12px;
+}
+.nav-btn{
+  all:unset; cursor:pointer;
+  padding:10px 12px; border-radius:10px; font-weight:700; font-size:13px;
+  border:1px solid var(--ring);
+  background: rgba(255,255,255,.06);
+}
+.nav-btn:hover{ background: rgba(255,255,255,.10); }
+.toolbar .spacer{ flex:1; }
 
 .linkcard .linkcard-head{
   all:unset; display:flex; align-items:center; gap:12px; width:100%;
