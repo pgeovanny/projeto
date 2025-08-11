@@ -1,19 +1,20 @@
-// helpers visibilidade (classe is-hidden)
+// Helpers visibilidade (classe is-hidden)
 const show = el => el.classList.remove('is-hidden');
 const hide = el => el.classList.add('is-hidden');
 
-// refs
+// Refs
 const menuBtn = document.querySelector('.menu-btn');
 const menuPop = document.getElementById('menu-pop');
 const linksSection = document.getElementById('links');
-const hint = document.getElementById('hint');
+const welcome = document.getElementById('welcome');
 
 const sections = {
   'leg-tjsp': document.getElementById('leg-tjsp'),
   'manual': document.getElementById('manual'),
 };
+const order = ['leg-tjsp', 'manual'];
 
-// Garante estado inicial: tudo oculto
+// Estado inicial
 hide(menuPop);
 hide(linksSection);
 Object.values(sections).forEach(hide);
@@ -35,30 +36,81 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Clique nas opções do menu
+// Ações ao clicar uma opção do menu → roteia por hash
 menuPop.querySelectorAll('.menu-item').forEach(btn => {
   btn.addEventListener('click', () => {
     const target = btn.getAttribute('data-open');
-
-    // mostra o container principal e esconde a mensagem inicial
-    show(linksSection);
-    hide(hint);
-
-    // esconde todas as seções e abre apenas a escolhida
-    Object.values(sections).forEach(hide);
-    show(sections[target]);
-
-    // abre o acordeão da seção escolhida
-    const head = sections[target].querySelector('[data-accordion]');
-    const body = sections[target].querySelector('.linkcard-body');
-    openAccordion(head, body);
-
-    // fecha o menu e faz scroll até a seção
-    hide(menuPop);
-    menuBtn.setAttribute('aria-expanded','false');
-    sections[target].scrollIntoView({ behavior:'smooth', block:'start' });
+    location.hash = target; // dispara o handler de rota
   });
 });
+
+// Router (hash)
+function renderFromHash() {
+  const id = (location.hash || '').replace('#','');
+
+  if (!id || !sections[id]) {
+    // Modo menu inicial
+    show(welcome);
+    hide(linksSection);
+    Object.values(sections).forEach(hide);
+    hide(menuPop);
+    menuBtn.setAttribute('aria-expanded','false');
+    return;
+  }
+
+  // Modo seção
+  hide(welcome);
+  show(linksSection);
+  Object.values(sections).forEach(hide);
+  show(sections[id]);
+
+  // abre o acordeão da seção ativa
+  const head = sections[id].querySelector('[data-accordion]');
+  const body = sections[id].querySelector('.linkcard-body');
+  openAccordion(head, body);
+
+  // fecha o menu e garante que não ficará atrás
+  hide(menuPop);
+  menuBtn.setAttribute('aria-expanded','false');
+
+  // setar botões next/prev dinamicamente
+  setupNavToolbar(id);
+
+  // scroll suave
+  sections[id].scrollIntoView({ behavior:'smooth', block:'start' });
+}
+window.addEventListener('hashchange', renderFromHash);
+window.addEventListener('load', renderFromHash);
+
+// Toolbar navegação
+function setupNavToolbar(activeId){
+  const idx = order.indexOf(activeId);
+  const sec = sections[activeId];
+  const backBtn = sec.querySelector('[data-nav="back"]');
+  const prevBtn = sec.querySelector('[data-nav="prev"]');
+  const nextBtn = sec.querySelector('[data-nav="next"]');
+
+  if (backBtn) backBtn.onclick = () => { location.hash = ''; };
+
+  if (prevBtn) {
+    if (idx > 0) {
+      prevBtn.removeAttribute('disabled');
+      prevBtn.onclick = () => { location.hash = order[idx - 1]; };
+    } else {
+      prevBtn.setAttribute('disabled','');
+      prevBtn.onclick = null;
+    }
+  }
+  if (nextBtn) {
+    if (idx < order.length - 1) {
+      nextBtn.removeAttribute('disabled');
+      nextBtn.onclick = () => { location.hash = order[idx + 1]; };
+    } else {
+      nextBtn.setAttribute('disabled','');
+      nextBtn.onclick = null;
+    }
+  }
+}
 
 // Acordeão
 document.querySelectorAll('[data-accordion]').forEach(btn => {
@@ -68,10 +120,8 @@ document.querySelectorAll('[data-accordion]').forEach(btn => {
 });
 function toggleAccordion(btn, body){
   const willOpen = body.classList.contains('is-hidden');
-  // fecha todos
   document.querySelectorAll('.linkcard .linkcard-body').forEach(b => hide(b));
   document.querySelectorAll('.linkcard .chev').forEach(c => c.style.transform = 'rotate(0deg)');
-  // abre se necessário
   if (willOpen) openAccordion(btn, body);
 }
 function openAccordion(btn, body){
@@ -93,6 +143,5 @@ const amostras = [
   "#", // Kit estratégias
 ];
 const compras = ["#","#","#","#","#","#","#"];
-
 document.querySelectorAll('[data-amostra]').forEach((a, i) => a.href = amostras[i] || '#');
 document.querySelectorAll('[data-compra]').forEach((a, i) => a.href = compras[i] || '#');
