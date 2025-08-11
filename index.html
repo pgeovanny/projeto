@@ -2,10 +2,9 @@
 <html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>PG - Concursos Públicos</title>
 
-    <!-- SEO / Social -->
     <meta name="description" content="Links oficiais de PG - Concursos Públicos: Legislação Interna TJ-SP 2025 e Manual do Aprovado." />
     <meta property="og:title" content="PG - Concursos Públicos" />
     <meta property="og:description" content="Legislação Interna TJ-SP 2025 e Manual do Aprovado" />
@@ -13,7 +12,6 @@
     <meta property="og:image" content="/assets/favicon.svg" />
     <link rel="icon" href="/assets/favicon.svg" />
 
-    <!-- Fonte -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
@@ -26,7 +24,6 @@
     <main class="container">
       <header class="header card">
         <div class="avatar" aria-hidden="true">
-          <!-- ícone/monograma -->
           <svg viewBox="0 0 64 64" width="56" height="56" role="img" aria-label="PG">
             <defs>
               <linearGradient id="g" x1="0" x2="1" y1="1" y2="0">
@@ -38,28 +35,31 @@
             <text x="32" y="40" text-anchor="middle" font-family="Inter, system-ui" font-size="24" font-weight="800" fill="#0b0f1a">PG</text>
           </svg>
         </div>
+
         <div class="title">
           <h1>PG – Concursos Públicos</h1>
-          <p class="tagline">Estratégia, materiais e legislação para o TJ-SP</p>
+          <p class="tagline">Escolha um conteúdo no menu abaixo</p>
         </div>
 
         <!-- menu suspenso moderno -->
         <div class="menu">
           <button class="menu-btn" aria-expanded="false" aria-controls="menu-pop">
-            Menu
-            <span class="chev" aria-hidden="true">▾</span>
+            Menu <span class="chev" aria-hidden="true">▾</span>
           </button>
           <nav id="menu-pop" class="menu-pop" hidden>
-            <a href="#leg-tjsp" class="menu-item">Legislação Interna TJ‑SP 2025</a>
-            <a href="#manual" class="menu-item">Manual do Aprovado</a>
+            <button class="menu-item" data-open="leg-tjsp">Legislação Interna TJ-SP 2025</button>
+            <button class="menu-item" data-open="manual">Manual do Aprovado</button>
           </nav>
         </div>
       </header>
 
-      <!-- bloco Linktree -->
-      <section class="links">
+      <!-- aviso inicial (some quando o usuário escolher algo) -->
+      <p class="hint" id="hint">Use o menu para selecionar um conteúdo.</p>
+
+      <!-- bloco Linktree (inicia oculto) -->
+      <section class="links" id="links" hidden>
         <!-- Card: Legislação Interna -->
-        <article id="leg-tjsp" class="linkcard card">
+        <article id="leg-tjsp" class="linkcard card" hidden>
           <button class="linkcard-head" data-accordion>
             <div class="icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
@@ -67,14 +67,13 @@
               </svg>
             </div>
             <div class="txt">
-              <h2>Legislação Interna TJ‑SP 2025</h2>
-              <p>Materiais essenciais, prontos para estudo — sem numeração visual.</p>
+              <h2>Legislação Interna TJ-SP 2025</h2>
+              <p>Gabarite a Legislação do TJ-SP.</p>
             </div>
             <span class="chev">▾</span>
           </button>
 
           <div class="linkcard-body" hidden>
-            <!-- Cada item é estático; coloque seus links de Amostra/Compra nas props data-* -->
             <div class="item">
               <div class="item-title">Resolução TJSP nº 850/2021</div>
               <div class="item-actions">
@@ -118,7 +117,7 @@
         </article>
 
         <!-- Card: Manual do Aprovado -->
-        <article id="manual" class="linkcard card">
+        <article id="manual" class="linkcard card" hidden>
           <button class="linkcard-head" data-accordion>
             <div class="icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
@@ -127,7 +126,7 @@
             </div>
             <div class="txt">
               <h2>Manual do Aprovado</h2>
-              <p>Estratégia prática, planejamentos e provas de autoridade.</p>
+              <p>O passo passo para você estudar sozinho e ser aprovado.</p>
             </div>
             <span class="chev">▾</span>
           </button>
@@ -153,8 +152,7 @@
       </section>
 
       <footer class="footer">
-        <a class="social" href="https://instagram.com/pg_concursos_" target="_blank" rel="noreferrer">Instagram</a>
-        <a class="social" href="#" target="_blank" rel="noreferrer">WhatsApp</a>
+        <a class="social" href="https://instagram.com/Pg.concursos" target="_blank" rel="noreferrer">@Pg.concursos</a>
         <a class="social" href="#" target="_blank" rel="noreferrer">Contato</a>
       </footer>
     </main>
