@@ -52,13 +52,22 @@
         </div>
       </header>
 
-      <!-- mensagem de boas-vindas (some após seleção) -->
-      <p class="hint" id="hint">Bem-vindo(a), você está mais próximo da sua aprovação.</p>
+      <!-- HERO / Boas-vindas -->
+      <section id="welcome" class="welcome card">
+        <h2><span>Bem-vindo(a)</span>, você está mais próximo da sua aprovação.</h2>
+        <p>Abra o menu para escolher por onde começar.</p>
+      </section>
 
-      <!-- bloco principal: começa totalmente oculto -->
+      <!-- bloco principal: começa oculto -->
       <section class="links is-hidden" id="links">
         <!-- Legislação Interna -->
-        <article id="leg-tjsp" class="linkcard card is-hidden">
+        <article id="leg-tjsp" class="linkcard card is-hidden" data-section>
+          <div class="toolbar">
+            <button class="nav-btn back" data-nav="back">← Voltar ao menu</button>
+            <div class="spacer"></div>
+            <button class="nav-btn next" data-nav="next" data-target="manual">Avançar ▶</button>
+          </div>
+
           <button class="linkcard-head" data-accordion>
             <div class="icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
@@ -116,7 +125,13 @@
         </article>
 
         <!-- Manual do Aprovado -->
-        <article id="manual" class="linkcard card is-hidden">
+        <article id="manual" class="linkcard card is-hidden" data-section>
+          <div class="toolbar">
+            <button class="nav-btn back" data-nav="back">← Voltar ao menu</button>
+            <div class="spacer"></div>
+            <button class="nav-btn prev" data-nav="prev" data-target="leg-tjsp">◀ Voltar</button>
+          </div>
+
           <button class="linkcard-head" data-accordion>
             <div class="icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
@@ -152,7 +167,6 @@
 
       <footer class="footer">
         <a class="social" aria-label="Instagram PG Concursos" href="https://instagram.com/Pg.concursos" target="_blank" rel="noreferrer">
-          <!-- Ícone Instagram -->
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.9.2 2.3.4.6.2 1 .4 1.5.9.5.5.7.9.9 1.5.2.4.3 1.1.4 2.3.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.2 1.9-.4 2.3-.2.6-.4 1-.9 1.5-.5.5-.9.7-1.5.9-.4.2-1.1.3-2.3.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.9-.2-2.3-.4-.6-.2-1-.4-1.5-.9-.5-.5-.7-.9-.9-1.5-.2-.4-.3-1.1-.4-2.3C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.9c.1-1.2.2-1.9.4-2.3.2-.6.4-1 .9-1.5.5-.5.9-.7 1.5-.9.4-.2 1.1-.3 2.3-.4C8.4 2.2 8.8 2.2 12 2.2zm0 1.8c-3.1 0-3.4 0-4.6.1-1 .1-1.5.2-1.8.3-.5.2-.8.4-1.2.8-.4.4-.6.7-.8 1.2-.1.3-.3.8-.3 1.8-.1 1.2-.1 1.5-.1 4.6s0 3.4.1 4.6c.1 1 .2 1.5.3 1.8.2.5.4.8.8 1.2.4.4.7.6 1.2.8.3.1.8.3 1.8.3 1.2.1 1.5.1 4.6.1s3.4 0 4.6-.1c1 0 1.5-.2 1.8-.3.5-.2.8-.4 1.2-.8.4-.4.6-.7.8-1.2.1-.3.3-.8.3-1.8.1-1.2.1-1.5.1-4.6s0-3.4-.1-4.6c0-1-.2-1.5-.3-1.8-.2-.5-.4-.8-.8-1.2-.4-.4-.7-.6-1.2-.8-.3-.1-.8-.3-1.8-.3-1.2-.1-1.5-.1-4.6-.1zm0 2.9a6.1 6.1 0 1 1 0 12.2 6.1 6.1 0 0 1 0-12.2zm0 1.8a4.3 4.3 0 1 0 0 8.6 4.3 4.3 0 0 0 0-8.6zm5-2.5a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8z"/>
           </svg>
