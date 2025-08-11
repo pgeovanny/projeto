@@ -17,10 +17,27 @@ const order = ['leg-tjsp', 'manual'];
 // ===== API base =====
 const WEB_APP_URL = window.WEB_APP_URL || '';
 
-// ===== Estado inicial =====
-hide(menuPop);
-hide(linksSection);
-Object.values(sections).forEach(hide);
+// ===== Fallback (quando a planilha/API não retorna dados) =====
+const FALLBACK = {
+  'leg-tjsp': [
+    { id:'res-850-2021', nome:'Resolução TJSP nº 850/2021',
+      amostra:'https://drive.google.com/drive/u/3/folders/1r5YY6pF9e2iaw4EjexVEPNlyD19mLtEu',
+      compra:'#' },
+    { id:'res-963-2025', nome:'Resolução TJSP nº 963/2025 – Governança & eproc',
+      amostra:'#', compra:'#' },
+    { id:'lc-1111-2010', nome:'Lei Complementar nº 1.111/2010',
+      amostra:'#', compra:'#' },
+    { id:'ri-tjsp', nome:'Regimento Interno do Tribunal de Justiça',
+      amostra:'https://drive.google.com/drive/u/3/folders/1nvgTdBw9NxKNNUQ5lMhFYBxHCxqQt5Wo',
+      compra:'#' },
+    { id:'normas-cgj', nome:'Normas da Corregedoria Geral da Justiça',
+      amostra:'#', compra:'#' },
+  ],
+  'manual': [
+    { id:'manual-completo', nome:'Manual do Aprovado – Versão Completa',
+      amostra:'#', compra:'#' },
+  ]
+};
 
 // ===== Menu (ancorado ao header; sempre na frente) =====
 function openMenu(){
@@ -128,52 +145,67 @@ async function sendVisit(){
   }catch(e){}
 }
 
-// ===== Carregar materiais da planilha =====
+// ===== Renderizadores =====
+function renderItems(sectionId, items){
+  const article = sections[sectionId];
+  if(!article) return;
+  const body = article.querySelector('.linkcard-body');
+  if(!body) return;
+  body.innerHTML = '';
+  items.forEach(it=>{
+    body.insertAdjacentHTML('beforeend', `
+      <div class="item" data-item-id="${it.id}">
+        <div class="item-title">${it.nome}</div>
+        <div class="item-actions">
+          <span class="likes" data-like-count>👍 0</span>
+          <span class="dislikes" data-dislike-count>👎 0</span>
+          <a class="btn ghost" data-amostra href="${it.amostra||'#'}" target="_blank" rel="noreferrer">Amostra</a>
+          <a class="btn grad"  data-compra  href="${it.compra||'#'}"  target="_blank" rel="noreferrer">Comprar</a>
+        </div>
+      </div>
+    `);
+  });
+}
+
+// ===== Carregar materiais (API -> fallback) =====
 async function loadMaterials(){
-  if (!WEB_APP_URL) return;
+  let usedFallback = false;
+  let data = null;
 
-  try{
-    const res = await fetch(`${WEB_APP_URL}?type=materials`);
-    const json = await res.json(); // { ok, sections:{leg-tjsp:[...], manual:[...]} }
-    if(!json.ok || !json.sections) return;
-
-    // monta cada seção
-    Object.entries(json.sections).forEach(([secId, items])=>{
-      const article = document.getElementById(secId);
-      if(!article) return;
-      const body = article.querySelector('.linkcard-body');
-      if(!body) return;
-      body.innerHTML = '';
-      items.forEach(it=>{
-        body.insertAdjacentHTML('beforeend', `
-          <div class="item" data-item-id="${it.id}">
-            <div class="item-title">${it.nome}</div>
-            <div class="item-actions">
-              <span class="likes" data-like-count>👍 0</span>
-              <span class="dislikes" data-dislike-count>👎 0</span>
-              <a class="btn ghost" data-amostra href="${it.amostra||'#'}" target="_blank" rel="noreferrer">Amostra</a>
-              <a class="btn grad"  data-compra  href="${it.compra||'#'}"  target="_blank" rel="noreferrer">Comprar</a>
-            </div>
-          </div>
-        `);
-      });
-    });
-
-    // liga handlers e carrega contadores
-    wireSampleAndVoting();
-    await loadStatsForAll();
-
-  }catch(e){
-    // silencioso para não quebrar a UI
+  if (WEB_APP_URL){
+    try{
+      const res = await fetch(`${WEB_APP_URL}?type=materials`, { cache:'no-store' });
+      data = await res.json(); // { ok, sections:{...} }
+    }catch(e){ /* ignora */ }
   }
+
+  if (!data || !data.ok || !data.sections || (!data.sections['leg-tjsp']?.length && !data.sections['manual']?.length)){
+    // Fallback seguro
+    usedFallback = true;
+    data = { ok:true, sections: FALLBACK };
+  }
+
+  // Renderiza
+  Object.keys(sections).forEach(secId=>{
+    renderItems(secId, data.sections[secId] || []);
+  });
+
+  // Liga handlers e contadores
+  wireSampleAndVoting();
+  await loadStatsForAll();
+
+  // Se não tem hash, mantém hero; se já tem, abre a seção escolhida
+  renderFromHash();
+
+  // Log simples no console pra depurar
+  console.log(usedFallback ? '[PG] usando FALLBACK de materiais' : '[PG] materiais carregados da planilha');
 }
 
 async function loadStatsForAll(){
-  if (!WEB_APP_URL) return;
   const ids = Array.from(document.querySelectorAll('.item[data-item-id]')).map(i=>i.getAttribute('data-item-id'));
-  if(!ids.length) return;
+  if(!ids.length || !WEB_APP_URL) return;
   try{
-    const res = await fetch(`${WEB_APP_URL}?type=stats&ids=${encodeURIComponent(ids.join(','))}`);
+    const res = await fetch(`${WEB_APP_URL}?type=stats&ids=${encodeURIComponent(ids.join(','))}`, { cache:'no-store' });
     const payload = await res.json(); // { ok:true, data:{id:{likes,dislikes}} }
     const data = payload && payload.data || {};
     document.querySelectorAll('.item[data-item-id]').forEach(el=>{
@@ -208,7 +240,7 @@ function wireSampleAndVoting(){
       textarea.placeholder = vote === 'like' ? 'O que você mais gostou?' : 'O que não curtiu no material?';
       form.onsubmit = async (e)=>{
         e.preventDefault();
-        if (!WEB_APP_URL || !pendingId) { closeModal(); return; }
+        if (!pendingId || !WEB_APP_URL){ closeModal(); return; }
         try{
           await fetch(WEB_APP_URL, {
             method:'POST', headers:{'Content-Type':'application/json'},
@@ -227,14 +259,12 @@ function wireSampleAndVoting(){
     };
   });
 
-  // Amostra -> abre link, e só depois pede o voto
+  // Amostra -> abre link e depois pede o voto
   document.querySelectorAll('[data-amostra]').forEach(a=>{
     a.addEventListener('click', ()=>{
       const item = a.closest('.item'); pendingId = item && item.getAttribute('data-item-id');
-      // fallback de tempo (se abriu na mesma aba)
       clearTimeout(timer);
       timer = setTimeout(()=> { if (pendingId) openModal(); }, 8000);
-      // quando voltar para a aba
       try{ localStorage.setItem('pg_vote_pending', pendingId||''); }catch(_){}
     });
   });
@@ -254,7 +284,6 @@ function wireSampleAndVoting(){
 
 // ===== Boot =====
 window.addEventListener('load', async () => {
-  await loadMaterials();
-  await sendVisit();
-  renderFromHash(); // aplica o hash atual se houver
+  await loadMaterials();   // monta lista (API -> fallback)
+  await sendVisit();       // registra visita
 });
