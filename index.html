@@ -1,134 +1,94 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>PG - Concursos Públicos</title>
-    <meta name="description" content="Links oficiais de PG - Concursos Públicos: Legislação Interna TJ-SP 2025 e Manual do Aprovado." />
-    <meta property="og:title" content="PG - Concursos Públicos" />
-    <meta property="og:description" content="Legislação Interna TJ-SP 2025 e Manual do Aprovado" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="/assets/favicon.svg" />
-    <link rel="icon" href="/assets/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="./styles.css" />
-  </head>
-  <body>
-    <div class="bg"></div>
-
-    <main class="container">
-      <header class="header card">
-        <div class="avatar" aria-hidden="true">
-          <svg viewBox="0 0 64 64" width="56" height="56" role="img" aria-label="PG">
-            <defs><linearGradient id="g" x1="0" x2="1" y1="1" y2="0"><stop offset="0" /><stop offset="1" /></linearGradient></defs>
-            <rect x="4" y="4" width="56" height="56" rx="14" fill="url(#g)" />
-            <text x="32" y="40" text-anchor="middle" font-family="Inter, system-ui" font-size="24" font-weight="800" fill="#0b0f1a">PG</text>
-          </svg>
-        </div>
-
-        <div class="title">
-          <h1>PG – Concursos Públicos</h1>
-          <p class="tagline">Escolha um conteúdo no menu abaixo</p>
-        </div>
-
-        <div class="menu">
-          <button class="menu-btn" aria-expanded="false" aria-controls="menu-pop">
-            Menu <span class="chev" aria-hidden="true">▾</span>
-          </button>
-          <nav id="menu-pop" class="menu-pop is-hidden">
-            <button class="menu-item" data-open="leg-tjsp">Legislação Interna TJ-SP 2025</button>
-            <button class="menu-item" data-open="manual">Manual do Aprovado</button>
-          </nav>
-        </div>
-      </header>
-
-      <!-- HERO / Boas-vindas -->
-      <section id="welcome" class="welcome card">
-        <h2><span>Bem-vindo(a)</span>, <b>você está mais próximo da sua aprovação.</b></h2>
-        <p>Abra o menu para escolher por onde começar.</p>
-      </section>
-
-      <!-- CONTEÚDO (preenchido dinamicamente pela planilha) -->
-      <section class="links is-hidden" id="links">
-        <!-- LEGISLAÇÃO -->
-        <article id="leg-tjsp" class="linkcard card is-hidden" data-section>
-          <div class="toolbar">
-            <button class="nav-btn back" data-nav="back">← Voltar ao menu</button>
-            <div class="spacer"></div>
-            <button class="nav-btn next" data-nav="next" data-target="manual">Avançar ▶</button>
-          </div>
-
-          <button class="linkcard-head" data-accordion>
-            <div class="icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M4 5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5zM13 3v4h4"/></svg>
-            </div>
-            <div class="txt">
-              <h2>Legislação Interna TJ-SP 2025</h2>
-              <p>Gabarite a Legislação do TJ-SP.</p>
-            </div>
-            <span class="chev">▾</span>
-          </button>
-
-          <div class="linkcard-body is-hidden"><!-- preenchido via JS --></div>
-        </article>
-
-        <!-- MANUAL -->
-        <article id="manual" class="linkcard card is-hidden" data-section>
-          <div class="toolbar">
-            <button class="nav-btn back" data-nav="back">← Voltar ao menu</button>
-            <div class="spacer"></div>
-            <button class="nav-btn prev" data-nav="prev" data-target="leg-tjsp">◀ Voltar</button>
-          </div>
-
-          <button class="linkcard-head" data-accordion>
-            <div class="icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M4 6a2 2 0 0 1 2-2h10l2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6z"/></svg>
-            </div>
-            <div class="txt">
-              <h2>Manual do Aprovado</h2>
-              <p>O passo passo para você estudar sozinho e ser aprovado.</p>
-            </div>
-            <span class="chev">▾</span>
-          </button>
-
-          <div class="linkcard-body is-hidden"><!-- preenchido via JS --></div>
-        </article>
-      </section>
-
-      <footer class="footer">
-        <a class="social" aria-label="Instagram PG Concursos" href="https://instagram.com/Pg.concursos" target="_blank" rel="noreferrer">
-          <!-- ícone instagram -->
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.9.2 2.3.4.6.2 1 .4 1.5.9.5.5.7.9.9 1.5.2.4.3 1.1.4 2.3.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.2 1.9-.4 2.3-.2.6-.4 1-.9 1.5-.5.5-.9.7-1.5.9-.4.2-1.1.3-2.3.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.9-.2-2.3-.4-.6-.2-1-.4-1.5-.9-.5-.5-.7-.9-.9-1.5-.2-.4-.3-1.1-.4-2.3C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.9c.1-1.2.2-1.9.4-2.3.2-.6.4-1 .9-1.5.5-.5.9-.7 1.5-.9.4-.2 1.1-.3 2.3-.4C8.4 2.2 8.8 2.2 12 2.2zm0 1.8c-3.1 0-3.4 0-4.6.1-1 .1-1.5.2-1.8.3-.5.2-.8.4-1.2.8-.4.4-.6.7-.8 1.2-.1.3-.3.8-.3 1.8-.1 1.2-.1 1.5-.1 4.6s0 3.4.1 4.6c.1 1 .2 1.5.3 1.8.2.5.4.8.8 1.2.4.4.7.6 1.2.8.3.1.8.3 1.8.3 1.2.1 1.5.1 4.6.1s3.4 0 4.6-.1zm0 2.9a6.1 6.1 0 1 1 0 12.2 6.1 6.1 0 0 1 0-12.2zm0 1.8a4.3 4.3 0 1 0 0 8.6 4.3 4.3 0 0 0 0-8.6zm5-2.5a1.4 1.4 0 1 1 0 2.8 1.4 1.4 0 0 1 0-2.8z"/>
-          </svg>
-        </a>
-      </footer>
-    </main>
-
-    <!-- MODAL LIKE/DISLIKE (após ver a amostra) -->
-    <div id="vote-modal" class="modal is-hidden" role="dialog" aria-modal="true" aria-labelledby="vote-title">
-      <div class="modal-card">
-        <h3 id="vote-title">O que achou da amostra?</h3>
-        <div class="vote-choices">
-          <button class="btn grad" data-vote="like">Gostei 👍</button>
-          <button class="btn ghost" data-vote="dislike">Não gostei 👎</button>
-        </div>
-        <form id="vote-form" class="is-hidden">
-          <textarea id="vote-text" rows="3" placeholder=""></textarea>
-          <div class="modal-actions">
-            <button type="button" class="btn ghost" id="vote-cancel">Cancelar</button>
-            <button type="submit" class="btn grad">Enviar</button>
-          </div>
-        </form>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PG – Concursos Públicos</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="logo">
+      <img src="logo.png" alt="PG">
+      <div>
+        <h1>PG – Concursos Públicos</h1>
+        <p>Escolha um conteúdo no menu abaixo</p>
       </div>
     </div>
+    <button class="menu-btn">Menu ▾</button>
+    <div id="menu-pop" class="is-hidden">
+      <button class="menu-item" data-open="leg-tjsp">Legislação Interna TJ-SP 2025</button>
+      <button class="menu-item" data-open="manual">Manual do Aprovado</button>
+    </div>
+  </header>
 
-    <!-- URL do seu Web App -->
-    <script>
-      window.WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyGLDdGgHWnLGC7WZd41rMvI3jQ_MNftCjA0GjEb7DN6zTF200eLOXy8-vk9-iY0jgi/exec";
-    </script>
-    <script src="./script.js"></script>
-  </body>
+  <main>
+    <!-- Tela de boas-vindas -->
+    <section id="welcome">
+      <div class="hero">
+        <h2><b>Bem-vindo(a)</b>, <span>você está mais próximo da sua aprovação.</span></h2>
+        <p>Abra o menu para escolher por onde começar.</p>
+      </div>
+      <a href="https://instagram.com/pg.concursos" target="_blank" class="insta-btn">
+        <img src="instagram.svg" alt="Instagram">
+      </a>
+    </section>
+
+    <!-- Seções -->
+    <section id="links" class="is-hidden">
+      <article id="leg-tjsp" class="is-hidden">
+        <div class="nav-bar">
+          <button data-nav="back">← Voltar ao menu</button>
+          <button data-nav="next">Avançar →</button>
+        </div>
+        <div class="linkcard">
+          <div class="linkcard-header" data-accordion>
+            <h3>Legislação Interna TJ-SP 2025</h3>
+            <p>Gabarite a Legislação do TJ-SP.</p>
+            <span class="chev">⌄</span>
+          </div>
+          <div class="linkcard-body is-hidden"></div>
+        </div>
+      </article>
+
+      <article id="manual" class="is-hidden">
+        <div class="nav-bar">
+          <button data-nav="prev">← Voltar</button>
+          <button data-nav="back">Voltar ao menu</button>
+        </div>
+        <div class="linkcard">
+          <div class="linkcard-header" data-accordion>
+            <h3>Manual do Aprovado</h3>
+            <p>O passo a passo para você estudar sozinho e ser aprovado.</p>
+            <span class="chev">⌄</span>
+          </div>
+          <div class="linkcard-body is-hidden"></div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <!-- Modal de votação -->
+  <div id="vote-modal" class="modal is-hidden">
+    <div class="modal-content">
+      <h3>O que achou do material?</h3>
+      <div class="vote-buttons">
+        <button data-vote="like">👍 Gostei</button>
+        <button data-vote="dislike">👎 Não gostei</button>
+      </div>
+      <form id="vote-form" class="is-hidden">
+        <textarea id="vote-text" placeholder=""></textarea>
+        <div>
+          <button type="submit">Enviar</button>
+          <button type="button" id="vote-cancel">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    window.WEB_APP_URL = "https://script.google.com/macros/s/AKfycbybGWmPY3IdnX4AtGzuCHsFDFmcI_sX4xF55fH_h6qjW85NGk6lZyJzuwIdclWxV9itNw/exec";
+  </script>
+  <script src="script.js"></script>
+</body>
 </html>
