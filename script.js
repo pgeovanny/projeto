@@ -19,14 +19,14 @@ hide(menuPop);
 hide(linksSection);
 Object.values(sections).forEach(hide);
 
-// ===== Menu ancorado ao header (absolute dentro do header) =====
+// ===== Menu ancorado ao header (sempre na frente) =====
 function openMenu(){
-  const header = menuBtn.closest('.header');
-  header.style.position = 'relative';           // garante contexto
+  const header = menuBtn.closest('.header'); // pai comum
+  header.style.position = 'relative';        // garante contexto
   menuPop.style.position = 'absolute';
   menuPop.style.right = '0';
   menuPop.style.top = '110%';
-  menuPop.style.zIndex = 9999;
+  menuPop.style.zIndex = 10002;              // acima do conteúdo
   show(menuPop);
   menuBtn.setAttribute('aria-expanded','true');
 }
@@ -72,9 +72,7 @@ window.addEventListener('load', () => { renderFromHash(); sendVisit(); loadAllSt
 
 // Menu items -> abre seção via hash
 menuPop.querySelectorAll('.menu-item').forEach(btn => {
-  btn.addEventListener('click', () => {
-    location.hash = btn.getAttribute('data-open');
-  });
+  btn.addEventListener('click', () => { location.hash = btn.getAttribute('data-open'); });
 });
 
 // ===== Toolbar navegação =====
@@ -114,8 +112,8 @@ function openAccordion(btn, body){
   if (chev) chev.style.transform = 'rotate(180deg)';
 }
 
-// ====== (Opcional) Integração Google Apps Script ======
-const WEB_APP_URL = window.WEB_APP_URL || null; // defina em index.html se quiser métricas
+// ===== Integração Google Apps Script (opcional) =====
+const WEB_APP_URL = window.WEB_APP_URL || null;
 
 async function sendVisit(){
   if (!WEB_APP_URL) return;
@@ -153,44 +151,75 @@ async function sendVote({ id, vote, feedback }){
   }catch(e){ return null; }
 }
 
-// ===== Modal de votação (se existir no HTML) =====
+// ===== Modal de votação: APÓS ver a amostra =====
 const modal = document.getElementById('vote-modal');
+let voteForm, voteTextarea, voteCancel;
+let pendingVoteId = null;
+let voteTimer = null;
+
 if (modal){
-  const form = document.getElementById('vote-form');
-  const textarea = document.getElementById('vote-text');
-  const btnCancel = document.getElementById('vote-cancel');
-  let pending = { id:null, href:null, vote:null };
+  voteForm = document.getElementById('vote-form');
+  voteTextarea = document.getElementById('vote-text');
+  voteCancel = document.getElementById('vote-cancel');
 
-  const openModal = ()=> show(modal);
-  const closeModal = ()=> { hide(modal); hide(form); textarea.value=''; pending={id:null, href:null, vote:null}; };
+  const openModal = ()=>{
+    show(modal);
+    // escolha like/dislike
+    modal.querySelectorAll('[data-vote]').forEach(b=>{
+      b.onclick = ()=>{
+        const v = b.getAttribute('data-vote'); // like | dislike
+        show(voteForm);
+        voteTextarea.placeholder = v === 'like' ? 'O que você mais gostou?' : 'O que não curtiu no material?';
+        voteForm.onsubmit = async (e)=>{
+          e.preventDefault();
+          const fb = (voteTextarea.value || '').trim();
+          await sendVote({ id: pendingVoteId, vote: v, feedback: fb });
+          closeModal();
+          loadAllStats();
+        };
+      };
+    });
+  };
+  const closeModal = ()=>{
+    hide(modal); hide(voteForm); voteTextarea.value='';
+    pendingVoteId = null;
+  };
+  if (voteCancel) voteCancel.addEventListener('click', closeModal);
 
-  modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
-  if (btnCancel) btnCancel.addEventListener('click', closeModal);
-  modal.querySelectorAll('[data-vote]').forEach(b=>{
-    b.addEventListener('click', ()=>{
-      pending.vote = b.getAttribute('data-vote'); // like | dislike
-      show(form);
-      textarea.placeholder = pending.vote === 'like' ? 'O que você mais gostou?' : 'O que não curtiu no material?';
-    });
-  });
-  if (form){
-    form.addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const fb = textarea.value.trim();
-      await sendVote({ id: pending.id, vote: pending.vote, feedback: fb });
-      closeModal();
-      loadAllStats();
-      if (pending.href) window.open(pending.href, '_blank', 'noopener');
-    });
-  }
-  // Intercepta "Amostra" para abrir o modal antes
+  // intercepta clique em Amostra APENAS para guardar o id e deixar abrir o link
   document.querySelectorAll('[data-amostra]').forEach(a=>{
-    a.addEventListener('click', (e)=>{
-      e.preventDefault();
+    a.addEventListener('click', ()=>{
       const item = a.closest('.item');
-      pending.id = item.getAttribute('data-item-id') || a.getAttribute('data-id') || 'unknown';
-      pending.href = a.getAttribute('href') || '#';
-      openModal();
+      pendingVoteId = item ? item.getAttribute('data-item-id') : null;
+      // fallback: se a pessoa não trocar de aba, abre modal depois de X segundos
+      clearTimeout(voteTimer);
+      voteTimer = setTimeout(()=>{
+        if (pendingVoteId) openModal();
+      }, 8000); // 8s
+      // sinaliza no storage para abrir quando retornar ao site (se abriu em nova aba)
+      try{
+        localStorage.setItem('pg_pending_vote', pendingVoteId || '');
+        localStorage.setItem('pg_pending_time', String(Date.now()));
+      }catch(e){}
     });
   });
+
+  // quando o usuário VOLTA para a aba -> abre o modal
+  document.addEventListener('visibilitychange', ()=>{
+    if (document.visibilityState === 'visible'){
+      clearTimeout(voteTimer);
+      try{
+        const id = localStorage.getItem('pg_pending_vote');
+        if (id){
+          pendingVoteId = id;
+          localStorage.removeItem('pg_pending_vote');
+          localStorage.removeItem('pg_pending_time');
+          openModal();
+        }
+      }catch(e){}
+    }
+  });
+
+  // fechar clicando fora
+  modal.addEventListener('click', (e)=>{ if (e.target === modal) { pendingVoteId=null; hide(modal); } });
 }
