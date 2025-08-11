@@ -51,7 +51,7 @@ body{
 .title h1{ margin:0; font-size:18px; font-weight:800; letter-spacing:.2px; }
 .tagline{ margin:2px 0 0; color:var(--muted); font-size:13px; }
 
-/* Menu (sempre acima) */
+/* Menu (ancorado ao header) */
 .menu{ margin-left:auto; position:relative; z-index:50; }
 .menu-btn{
   all:unset; cursor:pointer; padding:12px 14px; border-radius:12px;
@@ -61,14 +61,13 @@ body{
 .menu-btn:hover{ background: rgba(255,255,255,.08); }
 .menu-btn:focus-visible{ outline:2px solid #9aa8ff; outline-offset:2px; }
 
-/* menu-pop vira fixed via JS ao abrir; z-index altíssimo */
+/* O JS define position:absolute no openMenu(); aqui só o visual */
 .menu-pop{
-  position:absolute; right:0; top:110%; z-index:9999;
   min-width:260px; padding:8px;
   border-radius:14px; border:1px solid var(--ring);
   background: linear-gradient(180deg, rgba(15,22,39,.95), rgba(10,15,27,.95));
   backdrop-filter: blur(16px) saturate(120%);
-  box-shadow: var(--shadow); display:grid; gap:6px;
+  box-shadow: var(--shadow); display:grid; gap:6px; z-index:9999;
 }
 .menu-item{
   all:unset; cursor:pointer; padding:12px 12px; border-radius:10px;
@@ -165,6 +164,15 @@ body{
   background:rgba(255,255,255,.05); color:var(--txt); resize:vertical;
 }
 .modal-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:8px; }
+
+/* Rodapé */
+.footer{ margin-top:16px; display:flex; gap:10px; justify-content:center; }
+.social{
+  text-decoration:none; color:var(--txt);
+  padding:12px 14px; border-radius:12px; border:1px solid var(--ring);
+  background: rgba(255,255,255,.05); font-weight:600; font-size:13px;
+}
+.social:hover{ background: rgba(255,255,255,.08); }
 
 /* Mobile */
 @media (max-width: 380px){
