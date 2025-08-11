@@ -14,26 +14,26 @@ const sections = {
 };
 const order = ['leg-tjsp', 'manual'];
 
+// ===== API base =====
+const WEB_APP_URL = window.WEB_APP_URL || '';
+
 // ===== Estado inicial =====
 hide(menuPop);
 hide(linksSection);
 Object.values(sections).forEach(hide);
 
-// ===== Menu ancorado ao header (sempre na frente) =====
+// ===== Menu (ancorado ao header; sempre na frente) =====
 function openMenu(){
-  const header = menuBtn.closest('.header'); // pai comum
-  header.style.position = 'relative';        // garante contexto
+  const header = menuBtn.closest('.header');
+  header.style.position = 'relative';
   menuPop.style.position = 'absolute';
   menuPop.style.right = '0';
   menuPop.style.top = '110%';
-  menuPop.style.zIndex = 10002;              // acima do conteúdo
+  menuPop.style.zIndex = 10002;
   show(menuPop);
   menuBtn.setAttribute('aria-expanded','true');
 }
-function closeMenu(){
-  hide(menuPop);
-  menuBtn.setAttribute('aria-expanded','false');
-}
+function closeMenu(){ hide(menuPop); menuBtn.setAttribute('aria-expanded','false'); }
 menuBtn.addEventListener('click', () => {
   if (menuPop.classList.contains('is-hidden')) openMenu(); else closeMenu();
 });
@@ -68,7 +68,6 @@ function renderFromHash() {
   sections[id].scrollIntoView({ behavior:'smooth', block:'start' });
 }
 window.addEventListener('hashchange', renderFromHash);
-window.addEventListener('load', () => { renderFromHash(); sendVisit(); loadAllStats(); });
 
 // Menu items -> abre seção via hash
 menuPop.querySelectorAll('.menu-item').forEach(btn => {
@@ -112,114 +111,150 @@ function openAccordion(btn, body){
   if (chev) chev.style.transform = 'rotate(180deg)';
 }
 
-// ===== Integração Google Apps Script (opcional) =====
-const WEB_APP_URL = window.WEB_APP_URL || null;
-
+// ===== Sessão & Visitas =====
+function getSessionId(){
+  const k='pg_session_id';
+  let v = localStorage.getItem(k);
+  if(!v){ v = Math.random().toString(36).slice(2) + Date.now(); localStorage.setItem(k, v); }
+  return v;
+}
 async function sendVisit(){
   if (!WEB_APP_URL) return;
-  try{ await fetch(`${WEB_APP_URL}?type=visit`, { method:'POST', mode:'cors' }); }catch(e){}
+  try{
+    await fetch(WEB_APP_URL, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ type:'visit', session_id:getSessionId(), referrer:document.referrer||'', user_agent:navigator.userAgent })
+    });
+  }catch(e){}
 }
 
-async function loadAllStats(){
+// ===== Carregar materiais da planilha =====
+async function loadMaterials(){
   if (!WEB_APP_URL) return;
-  const items = document.querySelectorAll('.item[data-item-id]');
-  if (!items.length) return;
-  const ids = Array.from(items).map(i => i.getAttribute('data-item-id'));
+
   try{
-    const res = await fetch(`${WEB_APP_URL}?type=stats&ids=${encodeURIComponent(ids.join(','))}`, { method:'GET', mode:'cors' });
-    const data = await res.json(); // { id: {likes, dislikes} }
-    items.forEach(i => {
-      const id = i.getAttribute('data-item-id');
+    const res = await fetch(`${WEB_APP_URL}?type=materials`);
+    const json = await res.json(); // { ok, sections:{leg-tjsp:[...], manual:[...]} }
+    if(!json.ok || !json.sections) return;
+
+    // monta cada seção
+    Object.entries(json.sections).forEach(([secId, items])=>{
+      const article = document.getElementById(secId);
+      if(!article) return;
+      const body = article.querySelector('.linkcard-body');
+      if(!body) return;
+      body.innerHTML = '';
+      items.forEach(it=>{
+        body.insertAdjacentHTML('beforeend', `
+          <div class="item" data-item-id="${it.id}">
+            <div class="item-title">${it.nome}</div>
+            <div class="item-actions">
+              <span class="likes" data-like-count>👍 0</span>
+              <span class="dislikes" data-dislike-count>👎 0</span>
+              <a class="btn ghost" data-amostra href="${it.amostra||'#'}" target="_blank" rel="noreferrer">Amostra</a>
+              <a class="btn grad"  data-compra  href="${it.compra||'#'}"  target="_blank" rel="noreferrer">Comprar</a>
+            </div>
+          </div>
+        `);
+      });
+    });
+
+    // liga handlers e carrega contadores
+    wireSampleAndVoting();
+    await loadStatsForAll();
+
+  }catch(e){
+    // silencioso para não quebrar a UI
+  }
+}
+
+async function loadStatsForAll(){
+  if (!WEB_APP_URL) return;
+  const ids = Array.from(document.querySelectorAll('.item[data-item-id]')).map(i=>i.getAttribute('data-item-id'));
+  if(!ids.length) return;
+  try{
+    const res = await fetch(`${WEB_APP_URL}?type=stats&ids=${encodeURIComponent(ids.join(','))}`);
+    const payload = await res.json(); // { ok:true, data:{id:{likes,dislikes}} }
+    const data = payload && payload.data || {};
+    document.querySelectorAll('.item[data-item-id]').forEach(el=>{
+      const id = el.getAttribute('data-item-id');
       const s = data[id] || {likes:0, dislikes:0};
-      const likeEl = i.querySelector('[data-like-count]');
-      const dislikeEl = i.querySelector('[data-dislike-count]');
+      const likeEl = el.querySelector('[data-like-count]');
+      const dislikeEl = el.querySelector('[data-dislike-count]');
       if (likeEl) likeEl.textContent = `👍 ${s.likes||0}`;
       if (dislikeEl) dislikeEl.textContent = `👎 ${s.dislikes||0}`;
     });
   }catch(e){}
 }
 
-async function sendVote({ id, vote, feedback }){
-  if (!WEB_APP_URL) return null;
-  try{
-    const res = await fetch(`${WEB_APP_URL}?type=vote`, {
-      method:'POST', mode:'cors',
-      headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ id, vote, feedback })
-    });
-    return await res.json();
-  }catch(e){ return null; }
-}
+// ===== Votação APÓS ver a amostra =====
+function wireSampleAndVoting(){
+  const modal = document.getElementById('vote-modal');
+  if(!modal) return;
 
-// ===== Modal de votação: APÓS ver a amostra =====
-const modal = document.getElementById('vote-modal');
-let voteForm, voteTextarea, voteCancel;
-let pendingVoteId = null;
-let voteTimer = null;
+  const form = document.getElementById('vote-form');
+  const textarea = document.getElementById('vote-text');
+  const btnCancel = document.getElementById('vote-cancel');
+  let pendingId = null, timer = null;
 
-if (modal){
-  voteForm = document.getElementById('vote-form');
-  voteTextarea = document.getElementById('vote-text');
-  voteCancel = document.getElementById('vote-cancel');
+  const openModal = ()=> show(modal);
+  const closeModal = ()=>{ hide(modal); hide(form); textarea.value=''; pendingId=null; };
+  if (btnCancel) btnCancel.addEventListener('click', closeModal);
 
-  const openModal = ()=>{
-    show(modal);
-    // escolha like/dislike
-    modal.querySelectorAll('[data-vote]').forEach(b=>{
-      b.onclick = ()=>{
-        const v = b.getAttribute('data-vote'); // like | dislike
-        show(voteForm);
-        voteTextarea.placeholder = v === 'like' ? 'O que você mais gostou?' : 'O que não curtiu no material?';
-        voteForm.onsubmit = async (e)=>{
-          e.preventDefault();
-          const fb = (voteTextarea.value || '').trim();
-          await sendVote({ id: pendingVoteId, vote: v, feedback: fb });
-          closeModal();
-          loadAllStats();
-        };
+  modal.querySelectorAll('[data-vote]').forEach(b=>{
+    b.onclick = ()=>{
+      const vote = b.getAttribute('data-vote'); // like|dislike
+      show(form);
+      textarea.placeholder = vote === 'like' ? 'O que você mais gostou?' : 'O que não curtiu no material?';
+      form.onsubmit = async (e)=>{
+        e.preventDefault();
+        if (!WEB_APP_URL || !pendingId) { closeModal(); return; }
+        try{
+          await fetch(WEB_APP_URL, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({
+              type:'vote', id: pendingId, vote,
+              feedback: textarea.value||'',
+              session_id: getSessionId(),
+              referrer: document.referrer||'',
+              user_agent: navigator.userAgent
+            })
+          });
+        }catch(e){}
+        closeModal();
+        loadStatsForAll();
       };
-    });
-  };
-  const closeModal = ()=>{
-    hide(modal); hide(voteForm); voteTextarea.value='';
-    pendingVoteId = null;
-  };
-  if (voteCancel) voteCancel.addEventListener('click', closeModal);
+    };
+  });
 
-  // intercepta clique em Amostra APENAS para guardar o id e deixar abrir o link
+  // Amostra -> abre link, e só depois pede o voto
   document.querySelectorAll('[data-amostra]').forEach(a=>{
     a.addEventListener('click', ()=>{
-      const item = a.closest('.item');
-      pendingVoteId = item ? item.getAttribute('data-item-id') : null;
-      // fallback: se a pessoa não trocar de aba, abre modal depois de X segundos
-      clearTimeout(voteTimer);
-      voteTimer = setTimeout(()=>{
-        if (pendingVoteId) openModal();
-      }, 8000); // 8s
-      // sinaliza no storage para abrir quando retornar ao site (se abriu em nova aba)
-      try{
-        localStorage.setItem('pg_pending_vote', pendingVoteId || '');
-        localStorage.setItem('pg_pending_time', String(Date.now()));
-      }catch(e){}
+      const item = a.closest('.item'); pendingId = item && item.getAttribute('data-item-id');
+      // fallback de tempo (se abriu na mesma aba)
+      clearTimeout(timer);
+      timer = setTimeout(()=> { if (pendingId) openModal(); }, 8000);
+      // quando voltar para a aba
+      try{ localStorage.setItem('pg_vote_pending', pendingId||''); }catch(_){}
     });
   });
 
-  // quando o usuário VOLTA para a aba -> abre o modal
   document.addEventListener('visibilitychange', ()=>{
     if (document.visibilityState === 'visible'){
-      clearTimeout(voteTimer);
+      clearTimeout(timer);
       try{
-        const id = localStorage.getItem('pg_pending_vote');
-        if (id){
-          pendingVoteId = id;
-          localStorage.removeItem('pg_pending_vote');
-          localStorage.removeItem('pg_pending_time');
-          openModal();
-        }
-      }catch(e){}
+        const id = localStorage.getItem('pg_vote_pending');
+        if (id){ pendingId = id; localStorage.removeItem('pg_vote_pending'); openModal(); }
+      }catch(_){}
     }
   });
 
-  // fechar clicando fora
-  modal.addEventListener('click', (e)=>{ if (e.target === modal) { pendingVoteId=null; hide(modal); } });
+  modal.addEventListener('click', (e)=>{ if(e.target===modal) closeModal(); });
 }
+
+// ===== Boot =====
+window.addEventListener('load', async () => {
+  await loadMaterials();
+  await sendVisit();
+  renderFromHash(); // aplica o hash atual se houver
+});
