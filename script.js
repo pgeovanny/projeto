@@ -43,11 +43,12 @@ const HAS_SECTS = hasEl('#links'); // layout novo (accordion por seção)
 
 // ===== Init =====
 document.addEventListener('DOMContentLoaded', async () => {
+  wireMenuItems();        // <— novo: conecta o dropdown ao openSection
   trackVisit();
-  await loadMaterials(); // carrega rápido; 60s de cache no servidor
+  await loadMaterials();  // carrega rápido; 60s de cache no servidor
   wireAccordionAndToolbar();
-  wireModernModal();   // ativa handlers do modal "novo" (data-vote + form)
-  wireLegacyModal();   // ativa handlers do modal "antigo" (btn-like/btn-dislike)
+  wireModernModal();      // modal novo (data-vote + form)
+  wireLegacyModal();      // modal antigo (#btn-like/#btn-dislike)
 });
 
 // ===== API =====
@@ -91,14 +92,28 @@ async function sendVote({id, vote, feedback}){
   return true;
 }
 
-// ===== Navegação principal (usado pelo dropdown) =====
+// ===== Dropdown -> abrir seção =====
+function wireMenuItems(){
+  const pop = document.getElementById('menu-pop');
+  $$('.menu .menu-item[data-open]').forEach(it=>{
+    it.addEventListener('click', (e)=>{
+      e.preventDefault();
+      const sec = it.dataset.open; // "leg-tjsp" | "manual"
+      if (pop) pop.classList.add('is-hidden');
+      openSection(sec);
+    });
+  });
+}
+
+// ===== Navegação principal =====
 async function openSection(section){
+  if (!section) return;
   CURRENT_SECTION = section;
 
   if (HAS_GRID){
-    const title = section === 'leg-tjsp' ? 'Legislação Interna TJ-SP 2025' : 'Manual do Aprovado';
     const wrap = $('#list-wrap');
-    $('#section-title')?.textContent = title;
+    const title = section === 'leg-tjsp' ? 'Legislação Interna TJ-SP 2025' : 'Manual do Aprovado';
+    $('#section-title') && ($('#section-title').textContent = title);
     showEl(wrap, true);
     $('#welcome') && showEl($('#welcome'), false);
     await renderCardsGrid(section);
@@ -312,7 +327,7 @@ function wireModernModal(){
       if(!PENDING_VOTE?.id || !PENDING_VOTE?.type) return;
       const text = ($('#vote-text')?.value || '').trim();
 
-      // feedback visual simples (sem spinner moderno)
+      // feedback visual simples
       const submitBtn = form.querySelector('button[type="submit"]');
       const oldTxt = submitBtn?.textContent;
       if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Enviando…'; }
@@ -320,7 +335,6 @@ function wireModernModal(){
       try{
         await sendVote({id:PENDING_VOTE.id, vote:PENDING_VOTE.type, feedback:text});
         toast('Voto validado!');
-        // atualiza contadores
         await refreshOneCounter(PENDING_VOTE.id);
         setTimeout(closeVoteModal, 900);
       }catch(err){
