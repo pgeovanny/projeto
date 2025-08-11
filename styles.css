@@ -43,8 +43,11 @@ body{
   border-radius:20px; box-shadow:var(--shadow);
 }
 
-/* Header */
-.header{ display:flex; align-items:center; gap:12px; padding:12px; }
+/* Header (stacking context bem alto) */
+.header{
+  display:flex; align-items:center; gap:12px; padding:12px;
+  position: relative; z-index: 10000;
+}
 .avatar{ display:grid; place-items:center; width:52px; height:52px; border-radius:14px;
   background: linear-gradient(135deg, rgba(255,255,255,.14), rgba(255,255,255,.06)); border:1px solid var(--ring); overflow:hidden; }
 #g stop:first-child{ stop-color:var(--grad1); } #g stop:last-child{ stop-color:var(--grad2); }
@@ -52,7 +55,7 @@ body{
 .tagline{ margin:2px 0 0; color:var(--muted); font-size:13px; }
 
 /* Menu (ancorado ao header) */
-.menu{ margin-left:auto; position:relative; z-index:50; }
+.menu{ margin-left:auto; position:relative; z-index: 10001; }
 .menu-btn{
   all:unset; cursor:pointer; padding:12px 14px; border-radius:12px;
   border:1px solid var(--ring); background: rgba(255,255,255,.05);
@@ -61,13 +64,14 @@ body{
 .menu-btn:hover{ background: rgba(255,255,255,.08); }
 .menu-btn:focus-visible{ outline:2px solid #9aa8ff; outline-offset:2px; }
 
-/* O JS define position:absolute no openMenu(); aqui só o visual */
+/* Popover com z-index máximo dentro do header */
 .menu-pop{
-  min-width:260px; padding:8px;
+  position:absolute; right:0; top:110%;
+  min-width:260px; padding:8px; z-index: 10002;
   border-radius:14px; border:1px solid var(--ring);
   background: linear-gradient(180deg, rgba(15,22,39,.95), rgba(10,15,27,.95));
   backdrop-filter: blur(16px) saturate(120%);
-  box-shadow: var(--shadow); display:grid; gap:6px; z-index:9999;
+  box-shadow: var(--shadow); display:grid; gap:6px;
 }
 .menu-item{
   all:unset; cursor:pointer; padding:12px 12px; border-radius:10px;
@@ -84,7 +88,7 @@ body{
 }
 .welcome p{ margin:8px 0 0; color:var(--muted); font-size:14px; }
 
-/* Seções */
+/* Seções (sempre abaixo do header/menu) */
 .links{ margin-top:14px; display:grid; gap:12px; position: relative; z-index: 1; }
 .toolbar{ display:flex; align-items:center; gap:8px; padding:10px 12px 0 12px; }
 .nav-btn{
@@ -123,10 +127,7 @@ body{
 }
 .item-title{ font-weight:600; font-size:14px; }
 .item-actions{
-  display: grid;
-  grid-auto-flow: column;
-  align-items: center;
-  gap: 8px;
+  display: grid; grid-auto-flow: column; align-items: center; gap: 8px;
 }
 .item-actions .likes,
 .item-actions .dislikes{
