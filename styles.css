@@ -246,3 +246,22 @@ textarea{width:100%;min-height:84px;border:1px solid var(--ring);border-radius:1
 .toast{position:fixed;left:12px;bottom:12px;padding:10px 12px;background:#121a2c;border:1px solid var(--ring);border-radius:10px;color:var(--text);z-index:40}
 .toast.hidden{display:none}
 }
+/* ===== Dropdown do Menu ===== */
+.header{ z-index: 999; } /* garante que fica acima de tudo */
+.menu-dropdown{ position: relative; }
+.menuchip{
+  all:unset; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+  padding:10px 14px; border-radius:12px; border:1px solid var(--ring);
+  background:#121a2c; font-weight:800;
+}
+.menu-list{
+  position:absolute; right:0; top:44px; min-width:300px;
+  background:var(--card); border:1px solid var(--ring); border-radius:12px;
+  box-shadow: 0 10px 30px #0008; padding:6px; display:none; z-index:1000;
+}
+.menu-list.open{ display:block; }
+.menu-item{
+  all:unset; display:block; width:100%; cursor:pointer;
+  padding:10px 12px; border-radius:10px; font-weight:700;
+}
+.menu-item:hover{ background:rgba(255,255,255,.06); }
