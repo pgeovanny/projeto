@@ -1,261 +1,210 @@
-/* ===== Config ===== */
-const WEB_APP_URL = window.WEB_APP_URL || "";
+// ===== CONFIG =====
+const API = window.WEB_APP_URL; // defina em index.html
+if(!API) console.error('Defina window.WEB_APP_URL no index.html');
 
-/* ===== Helpers ===== */
-const $  = (s) => document.querySelector(s);
-const $$ = (s) => Array.from(document.querySelectorAll(s));
-const show = (el) => el && el.classList.remove("is-hidden");
-const hide = (el) => el && el.classList.add("is-hidden");
+// ===== Helpers =====
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const toast = (m) => { const t=$("#toast"); t.textContent=m; t.classList.remove('hidden'); setTimeout(()=>t.classList.add('hidden'), 1500); };
+const uid = () => Math.random().toString(36).slice(2)+Date.now().toString(36);
+const sess = (() => {
+  let id = localStorage.getItem('pgsid');
+  if(!id){ id = uid(); localStorage.setItem('pgsid', id); }
+  return id;
+})();
 
-/* ===== Perf: cache local ===== */
-const CACHE_KEY = "pg_materials_cache_v1";
-const CACHE_TTL = 5 * 60 * 1000; // 5 min
-const readCache = () => {
-  try { const x = JSON.parse(localStorage.getItem(CACHE_KEY)||"null");
-        if (!x || Date.now() - x.ts > CACHE_TTL) return null;
-        return x.data; } catch { return null; }
-};
-const writeCache = (data) => { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ts:Date.now(), data})); } catch {} };
+// ===== Estado =====
+let MATERIALS = {}; // { 'leg-tjsp': [...], 'manual': [...] }
+let CURRENT_SECTION = null;
+let CURRENT_ITEM = null;
+let PENDING_VOTE = null; // {id, type}
 
-/* ===== API helpers (sem preflight) ===== */
-async function apiGet(q=""){ const u = q? `${WEB_APP_URL}?${q}`: WEB_APP_URL; const r = await fetch(u,{cache:"no-store"}); return r.json(); }
-async function apiPost(body){ const r = await fetch(WEB_APP_URL,{method:"POST", body: JSON.stringify(body)}); try{return await r.json();}catch{return {ok:true}} }
-
-/* ===== UI refs ===== */
-const menuBtn=$(".menu-btn"), menuPop=$("#menu-pop");
-const welcome=$("#welcome"), links=$("#links");
-const sections={ "leg-tjsp": $("#leg-tjsp"), "manual": $("#manual") };
-const order = ["leg-tjsp","manual"];
-
-/* ===== Menu ===== */
-function openMenu(){ const hdr=menuBtn.closest(".header"); hdr.style.position="relative";
-  Object.assign(menuPop.style,{position:"absolute",right:"0",top:"110%",zIndex:10002}); show(menuPop);
-  menuBtn.setAttribute("aria-expanded","true"); }
-function closeMenu(){ hide(menuPop); menuBtn.setAttribute("aria-expanded","false"); }
-menuBtn.addEventListener("click",(e)=>{e.stopPropagation(); menuPop.classList.contains("is-hidden")?openMenu():closeMenu();});
-document.addEventListener("click",(e)=>{ if(!menuPop.contains(e.target)&&!menuBtn.contains(e.target)) closeMenu(); });
-
-/* ===== Router ===== */
-function renderFromHash(){
-  const id=(location.hash||"").replace("#","");
-  if(!id||!sections[id]){ show(welcome); hide(links); Object.values(sections).forEach(hide); closeMenu(); return; }
-  hide(welcome); show(links); Object.values(sections).forEach(hide); show(sections[id]); closeMenu();
-  const head=sections[id].querySelector("[data-accordion]"); const body=sections[id].querySelector(".linkcard-body");
-  if(head&&body) openAccordion(head,body);
-  setupNav(id);
-}
-window.addEventListener("hashchange", renderFromHash);
-$$("#menu-pop .menu-item").forEach(b=> b.addEventListener("click",()=> location.hash = b.dataset.open));
-
-/* ===== Toolbar ===== */
-function setupNav(active){ const idx=order.indexOf(active), sec=sections[active];
-  const back=sec.querySelector('[data-nav="back"]'), prev=sec.querySelector('[data-nav="prev"]'), next=sec.querySelector('[data-nav="next"]');
-  if(back) back.onclick=()=> location.hash="";
-  if(prev){ if(idx>0){prev.disabled=false;prev.onclick=()=>location.hash=order[idx-1];} else {prev.disabled=true;prev.onclick=null;} }
-  if(next){ if(idx<order.length-1){next.disabled=false;next.onclick=()=>location.hash=order[idx+1];} else {next.disabled=true;next.onclick=null;} }
-}
-
-/* ===== Accordion ===== */
-$$("[data-accordion]").forEach(btn=>{
-  const body=btn.closest(".linkcard").querySelector(".linkcard-body");
-  btn.addEventListener("click", ()=> toggleAcc(btn,body));
+// ===== Init =====
+document.addEventListener('DOMContentLoaded', async () => {
+  trackVisit();
+  bindMenu();
+  await loadMaterials(); // carrega rápido; 60s de cache no servidor
 });
-function toggleAcc(btn,body){ const willOpen = body.classList.contains("is-hidden");
-  $$(".linkcard .linkcard-body").forEach(b=> hide(b));
-  $$(".linkcard .chev").forEach(c=> c.style.transform="rotate(0deg)");
-  if (willOpen) openAccordion(btn, body);
-}
-function openAccordion(btn, body){ show(body); const c=btn.querySelector(".chev"); if(c) c.style.transform="rotate(180deg)"; }
 
-/* ===== Sessão & visita ===== */
-function sessionId(){ const k="pg_session_id"; let v=localStorage.getItem(k);
-  if(!v){ v=Math.random().toString(36).slice(2)+Date.now(); localStorage.setItem(k,v); } return v; }
-async function sendVisit(){ try{ await apiPost({type:"visit", session_id:sessionId(), user_agent:navigator.userAgent, referrer:document.referrer||""}); }catch{} }
-
-/* ===== Skeleton Loader ===== */
-function showSkeleton(sectionEl, rows=4){
-  const body = sectionEl.querySelector(".linkcard-body");
-  body.innerHTML = `<div class="pro-table">
-    <div class="pro-table__head">
-      <span class="col--name">Material</span>
-      <span class="col--stats">Avaliações</span>
-      <span class="col--actions">Ações</span>
-    </div>
-    <div class="pro-table__body">
-      ${Array.from({length:rows}).map(()=>`
-        <div class="pro-table__row skeleton">
-          <div class="col--name"><span class="sk"></span></div>
-          <div class="col--stats"><span class="sk sk-badge"></span></div>
-          <div class="col--actions"><span class="sk sk-btn"></span><span class="sk sk-btn"></span></div>
-        </div>`).join("")}
-    </div>
-  </div>`;
-}
-
-/* ===== Renderizador em tabela profissional ===== */
-function renderTable(sectionId, items){
-  const body = sections[sectionId].querySelector(".linkcard-body");
-  body.innerHTML = `<div class="pro-table">
-    <div class="pro-table__head">
-      <span class="col--name">Material</span>
-      <span class="col--stats">👍 / 👎</span>
-      <span class="col--actions">Ações</span>
-    </div>
-    <div class="pro-table__body"></div>
-  </div>`;
-  const tbody = body.querySelector(".pro-table__body");
-  const frag = document.createDocumentFragment();
-
-  items.forEach(it=>{
-    const row = document.createElement("div");
-    row.className = "pro-table__row";
-    row.setAttribute("data-item-id", it.id);
-    row.innerHTML = `
-      <div class="col--name">
-        <div class="title">${it.nome}</div>
-        ${it.descricao ? `<div class="desc">${it.descricao}</div>` : ""}
-      </div>
-      <div class="col--stats">
-        <span class="badge" data-like-count>0</span>
-        <span class="badge neg" data-dislike-count>0</span>
-      </div>
-      <div class="col--actions">
-        <a class="btn ghost" data-amostra href="${it.amostra||'#'}" target="_blank" rel="noreferrer">Amostra</a>
-        <a class="btn grad"  href="${it.compra||'#'}"  target="_blank" rel="noreferrer">Comprar</a>
-      </div>`;
-    frag.appendChild(row);
-  });
-
-  tbody.appendChild(frag);
-}
-
-/* ===== Carregamento rápido: cache -> skeleton -> rede ===== */
-async function loadMaterials(){
-  // 1) instantâneo: cache local (se existir)
-  const cached = readCache();
-  if (cached && cached.sections) {
-    Object.keys(sections).forEach(sec => renderTable(sec, cached.sections[sec] || []));
-    wireVoting(); refreshStats(); renderFromHash();
-  } else {
-    // skeleton enquanto busca
-    Object.values(sections).forEach(secEl => showSkeleton(secEl));
-  }
-
-  // 2) rede: busca com timeout curto (fail-fast)
-  let net = null;
+// ===== API Calls =====
+async function loadMaterials(force=false){
   try{
-    const controller = new AbortController();
-    const t = setTimeout(()=> controller.abort(), 6000); // 6s
-    const res = await fetch(`${WEB_APP_URL}?type=materials`, { cache:"no-store", signal: controller.signal });
-    clearTimeout(t);
-    net = await res.json();
-  }catch(e){ console.warn("[PG] materials network slow/fail", e); }
-
-  if (net && net.ok && net.sections){
-    writeCache(net);
-    Object.keys(sections).forEach(sec => renderTable(sec, net.sections[sec] || []));
-    wireVoting(); refreshStats(); renderFromHash();
+    const url = `${API}?type=materials${force?'&nocache=1':''}&_=${Date.now()}`;
+    const res = await fetch(url, {method:'GET'});
+    if(!res.ok) throw new Error('Falha ao carregar materiais');
+    const json = await res.json();
+    if(!json?.ok) throw new Error(json?.error||'Erro ao ler JSON');
+    MATERIALS = json.sections || {};
+    // nada aparece até o usuário escolher o menu (UX esperada)
+  }catch(err){
+    console.error(err); toast('Erro ao carregar materiais');
   }
 }
 
-/* ===== Stats ===== */
-async function refreshStats(){
-  const ids = $$(".pro-table__row[data-item-id]").map(el=>el.getAttribute("data-item-id"));
-  if(!ids.length) return;
+async function fetchStats(ids){
+  if(!ids?.length) return {};
+  const url = `${API}?type=stats&ids=${encodeURIComponent(ids.join(','))}&_=${Date.now()}`;
+  const res = await fetch(url);
+  if(!res.ok) return {};
+  const json = await res.json();
+  return json?.data || {};
+}
+
+async function trackVisit(){
   try{
-    const {data} = await apiGet(`type=stats&ids=${encodeURIComponent(ids.join(","))}`);
-    $$(".pro-table__row[data-item-id]").forEach(el=>{
-      const id = el.getAttribute("data-item-id");
-      const s = (data && data[id]) || {likes:0, dislikes:0};
-      const likeEl = el.querySelector("[data-like-count]");
-      const disEl  = el.querySelector("[data-dislike-count]");
-      if (likeEl) likeEl.textContent = s.likes || 0;
-      if (disEl)  disEl.textContent  = s.dislikes || 0;
+    await fetch(API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({type:'visit', session_id:sess, user_agent:navigator.userAgent, referrer:document.referrer||''})
     });
-  }catch(e){ console.warn("[PG] stats fail", e); }
+  }catch(_){}
 }
 
-/* ===== Votação pós-amostra (com animação e confirmação) ===== */
-function wireVoting(){
-  const modal = $("#vote-modal"), form = $("#vote-form"), txt = $("#vote-text"), cancel = $("#vote-cancel");
-  if(!modal) return;
+async function sendVote({id, vote, feedback}){
+  const body = {type:'vote', id, vote, feedback:feedback||'', session_id:sess, user_agent:navigator.userAgent, referrer:document.referrer||''};
+  const res = await fetch(API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  if(!res.ok) throw new Error('Falha no voto');
+  const json = await res.json(); if(!json?.ok) throw new Error(json?.error||'Falha no voto');
+  return true;
+}
 
-  // cria/obtém área de status (spinner / mensagens)
-  let statusEl = modal.querySelector(".status");
-  if (!statusEl) {
-    statusEl = document.createElement("div");
-    statusEl.className = "status is-hidden";
-    form.parentElement.appendChild(statusEl); // abaixo do form
-  }
-
-  let pending=null, timer=null;
-  const open=()=>show(modal);
-  const close=()=>{ hide(modal); hide(form); hide(statusEl); txt.value=""; pending=null; resetSubmit(); };
-
-  if(cancel) cancel.onclick=close;
-  modal.addEventListener("click",e=>{ if(e.target===modal) close(); });
-
-  // botão submit (para animar)
-  const submitBtn = form.querySelector('button[type="submit"]');
-  function setLoading(){
-    if (submitBtn){ submitBtn.classList.add("loading"); submitBtn.disabled = true; submitBtn.dataset.label = submitBtn.textContent; submitBtn.textContent = "Enviando..."; }
-    if (txt) txt.disabled = true;
-  }
-  function resetSubmit(){
-    if (submitBtn){ submitBtn.classList.remove("loading"); submitBtn.disabled = false; submitBtn.textContent = submitBtn.dataset.label || "Enviar"; }
-    if (txt) txt.disabled = false;
-  }
-
-  $$('.pro-table__row [data-amostra]').forEach(a=>{
-    a.addEventListener("click", ()=>{
-      pending = a.closest(".pro-table__row")?.getAttribute("data-item-id") || null;
-      clearTimeout(timer); timer = setTimeout(()=> { if(pending) open(); }, 8000);
-      try{ localStorage.setItem("pg_vote_pending", pending||""); }catch{}
+// ===== UI =====
+function bindMenu(){
+  $$('.menu-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> {
+      const sec = btn.dataset.section;
+      openSection(sec);
     });
   });
+}
 
-  document.addEventListener("visibilitychange", ()=>{
-    if(document.visibilityState==="visible"){
-      clearTimeout(timer);
-      try{
-        const id = localStorage.getItem("pg_vote_pending");
-        if(id){ pending=id; localStorage.removeItem("pg_vote_pending"); open(); }
-      }catch{}
-    }
+// abre a seção e lista cards
+async function openSection(section){
+  CURRENT_SECTION = section;
+  const title = section === 'leg-tjsp' ? 'Legislação Interna TJ-SP 2025' : 'Manual do Aprovado';
+  $('#section-title').textContent = title;
+  $('#list-wrap').classList.remove('hidden');
+  renderCards(section);
+}
+
+// monta cards e injeta contadores
+async function renderCards(section){
+  const container = $('#cards');
+  container.innerHTML = '';
+  const items = (MATERIALS[section]||[]).slice();
+  if(!items.length){
+    // força nocache caso tenha acabado de adicionar na planilha
+    await loadMaterials(true);
+  }
+  const list = MATERIALS[section] || [];
+  if(!list.length){
+    container.innerHTML = `<div class="muted">Nenhum material disponível nesta seção.</div>`;
+    return;
+  }
+
+  // cria cards e coleta IDs
+  const ids = [];
+  list.forEach(item=>{
+    ids.push(item.id);
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <h4>${escapeHtml(item.nome)}</h4>
+      ${item.descricao ? `<div class="desc">${escapeHtml(item.descricao)}</div>` : ''}
+      <div class="badges">
+        <span class="badge good" id="lk-${item.id}">👍 0</span>
+        <span class="badge bad"  id="dk-${item.id}">👎 0</span>
+      </div>
+      <div class="actions">
+        <button class="btn" data-action="amostra" data-id="${item.id}" data-url="${item.amostra||'#'}">Ver amostra</button>
+        <a class="btn grad" href="${item.compra||'#'}" target="_blank" rel="noopener">Comprar</a>
+      </div>
+    `;
+    container.appendChild(card);
   });
 
-  $$("#vote-modal [data-vote]").forEach(btn=>{
-    btn.onclick = ()=>{
-      const vote = btn.getAttribute("data-vote");
-      show(form);
-      txt.placeholder = vote==="like" ? "O que você mais gostou?" : "O que não curtiu no material?";
+  // busca stats e preenche
+  const map = await fetchStats(ids);
+  Object.entries(map).forEach(([id, val])=>{
+    const lk = document.getElementById(`lk-${id}`);
+    const dk = document.getElementById(`dk-${id}`);
+    if(lk) lk.textContent = `👍 ${val.likes||0}`;
+    if(dk) dk.textContent = `👎 ${val.dislikes||0}`;
+  });
 
-      form.onsubmit = async (e)=>{
-        e.preventDefault(); if(!pending) return close();
-
-        // animação de envio
-        setLoading();
-        statusEl.innerHTML = `<span class="spinner"></span><span>Enviando voto...</span>`;
-        show(statusEl);
-
-        try{
-          await apiPost({ type:"vote", id:pending, vote, feedback: txt.value||"", session_id: sessionId(), user_agent: navigator.userAgent, referrer: document.referrer||"" });
-          // sucesso
-          statusEl.innerHTML = `<span class="check">✓</span><span><b>Voto validado!</b></span>`;
-          statusEl.classList.add("ok");
-          setTimeout(()=>{ close(); refreshStats(); statusEl.classList.remove("ok"); }, 1200);
-        }catch(err){
-          statusEl.innerHTML = `<span class="error">!</span><span>Falha ao enviar. Tente novamente.</span>`;
-          statusEl.classList.remove("ok");
-          resetSubmit();
-        }
-      };
-    };
+  // bind botões de amostra
+  container.querySelectorAll('button[data-action="amostra"]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = btn.dataset.id;
+      const url = btn.dataset.url;
+      CURRENT_ITEM = id;
+      if(url && url !== '#') window.open(url, '_blank', 'noopener');
+      openVoteModal(id);
+    });
   });
 }
 
-/* ===== Boot ===== */
-window.addEventListener("load", async ()=>{
-  await loadMaterials();
-  await sendVisit();
+function openVoteModal(id){
+  PENDING_VOTE = {id, type:null};
+  $('#vote-modal').classList.remove('hidden');
+  $('#vote-ok').classList.add('hidden');
+  $('#feedback-area').classList.add('hidden');
+  $('#vote-send').disabled = true;
+  $('#feedback').value = '';
+  $('#btn-like').classList.remove('active');
+  $('#btn-dislike').classList.remove('active');
+}
+
+function closeVoteModal(){
+  $('#vote-modal').classList.add('hidden');
+}
+
+$('#vote-close').addEventListener('click', closeVoteModal);
+
+$('#btn-like').addEventListener('click', ()=>{
+  PENDING_VOTE.type = 'like';
+  $('#btn-like').classList.add('active');
+  $('#btn-dislike').classList.remove('active');
+  $('#feedback-area').classList.remove('hidden');
+  $('#fb-label').textContent = 'O que você mais gostou? (opcional)';
+  $('#feedback').placeholder = 'Comente um destaque do material…';
+  $('#vote-send').disabled = false;
 });
+
+$('#btn-dislike').addEventListener('click', ()=>{
+  PENDING_VOTE.type = 'dislike';
+  $('#btn-dislike').classList.add('active');
+  $('#btn-like').classList.remove('active');
+  $('#feedback-area').classList.remove('hidden');
+  $('#fb-label').textContent = 'O que não curtiu? (opcional)';
+  $('#feedback').placeholder = 'Conte o motivo: clareza, formato, abrangência…';
+  $('#vote-send').disabled = false;
+});
+
+$('#vote-send').addEventListener('click', async ()=>{
+  if(!PENDING_VOTE?.id || !PENDING_VOTE?.type) return;
+  $('#vote-spinner').classList.remove('hidden');
+  $('#vote-send').disabled = true;
+  try{
+    await sendVote({id:PENDING_VOTE.id, vote:PENDING_VOTE.type, feedback:$('#feedback').value.trim()});
+    $('#vote-spinner').classList.add('hidden');
+    $('#vote-ok').classList.remove('hidden');
+    toast('Voto validado!');
+    // atualiza counters do card
+    const map = await fetchStats([PENDING_VOTE.id]);
+    const v = map[PENDING_VOTE.id]||{};
+    const lk = document.getElementById(`lk-${PENDING_VOTE.id}`);
+    const dk = document.getElementById(`dk-${PENDING_VOTE.id}`);
+    if(lk) lk.textContent = `👍 ${v.likes||0}`;
+    if(dk) dk.textContent = `👎 ${v.dislikes||0}`;
+    setTimeout(closeVoteModal, 900);
+  }catch(err){
+    console.error(err);
+    $('#vote-spinner').classList.add('hidden');
+    $('#vote-send').disabled = false;
+    toast('Falha ao enviar voto');
+  }
+});
+
+// util
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[m]); }
