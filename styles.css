@@ -43,7 +43,7 @@ body{
   border-radius:20px; box-shadow:var(--shadow);
 }
 
-/* Header (stacking context bem alto) */
+/* Header (stacking alto) */
 .header{
   display:flex; align-items:center; gap:12px; padding:12px;
   position: relative; z-index: 10000;
@@ -63,8 +63,6 @@ body{
 }
 .menu-btn:hover{ background: rgba(255,255,255,.08); }
 .menu-btn:focus-visible{ outline:2px solid #9aa8ff; outline-offset:2px; }
-
-/* Popover com z-index máximo dentro do header */
 .menu-pop{
   position:absolute; right:0; top:110%;
   min-width:260px; padding:8px; z-index: 10002;
@@ -88,7 +86,7 @@ body{
 }
 .welcome p{ margin:8px 0 0; color:var(--muted); font-size:14px; }
 
-/* Seções (sempre abaixo do header/menu) */
+/* Seções */
 .links{ margin-top:14px; display:grid; gap:12px; position: relative; z-index: 1; }
 .toolbar{ display:flex; align-items:center; gap:8px; padding:10px 12px 0 12px; }
 .nav-btn{
@@ -112,25 +110,16 @@ body{
 .linkcard .txt h2{ margin:0; font-size:17px; font-weight:700; }
 .linkcard .txt p{ margin:6px 0 0; color:var(--muted); font-size:13px; }
 .linkcard .chev{ margin-left:auto; opacity:.8; transition: transform .25s ease; }
-
 .linkcard-body{ padding: 2px 16px 16px 64px; display:grid; gap:10px; }
 
 /* Itens alinhados */
 .item{
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 8px;
-  padding:12px; border-radius:14px;
-  background: rgba(255,255,255,.04);
-  border:1px solid rgba(255,255,255,.08);
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px;
+  padding:12px; border-radius:14px; background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
 }
 .item-title{ font-weight:600; font-size:14px; }
-.item-actions{
-  display: grid; grid-auto-flow: column; align-items: center; gap: 8px;
-}
-.item-actions .likes,
-.item-actions .dislikes{
+.item-actions{ display: grid; grid-auto-flow: column; align-items: center; gap: 8px; }
+.item-actions .likes,.item-actions .dislikes{
   height: 38px; display: inline-grid; place-items: center;
   padding: 0 10px; border-radius: 12px; font-size:12px; color:var(--muted);
   border:1px solid var(--ring); background:rgba(255,255,255,.05);
