@@ -107,9 +107,58 @@
     </div>
   </div>
 
+  <!-- URL do seu App Script -->
   <script>
     window.WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxDgQWhZ7qpV3H_w0tj6N8a6srY6HjwR2M9dXw3qT6gXwkmkbQA4HozuQ-e35iAgmytqQ/exec";
   </script>
+
+  <!-- Patch do dropdown (mantendo seu HTML/CSS) -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn  = document.querySelector('.menu-btn');
+      const pop  = document.getElementById('menu-pop');
+      if (!btn || !pop) return;
+
+      const open  = () => { pop.classList.remove('is-hidden'); btn.setAttribute('aria-expanded','true'); };
+      const close = () => { pop.classList.add('is-hidden');  btn.setAttribute('aria-expanded','false'); };
+
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        pop.classList.contains('is-hidden') ? open() : close();
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!pop.contains(e.target) && e.target !== btn) close();
+      });
+
+      // Clicar numa opção do menu → abre a seção e fecha o menu
+      pop.querySelectorAll('.menu-item').forEach(it => {
+        it.addEventListener('click', () => {
+          const sec = it.dataset.open; // "leg-tjsp" | "manual"
+          close();
+
+          // Se seu script define openSection, usamos ele
+          if (typeof openSection === 'function') {
+            openSection(sec);
+          } else {
+            // Fallback simples: mostra a seção no layout atual
+            const links = document.getElementById('links');
+            const welcome = document.getElementById('welcome');
+            if (links) links.classList.remove('is-hidden');
+            if (welcome) welcome.classList.add('is-hidden');
+            document.querySelectorAll('#links .linkcard').forEach(el => el.classList.add('is-hidden'));
+            const target = document.getElementById(sec);
+            if (target) target.classList.remove('is-hidden');
+            // rolar para os materiais
+            const y = (links || target)?.offsetTop || 0;
+            if (y) window.scrollTo({ top: y - 20, behavior: 'smooth' });
+          }
+        });
+      });
+    });
+  </script>
+
+  <!-- Seu JS principal -->
   <script src="script.js"></script>
 </body>
 </html>
