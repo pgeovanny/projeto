@@ -5,6 +5,7 @@
   --grad1:#7c5cff; --grad2:#ff4fd8;
   --shadow:0 10px 30px rgba(2,6,23,.35);
 }
+.is-hidden{ display:none !important; }
 
 *{ box-sizing:border-box; }
 html,body{ height:100%; }
@@ -112,7 +113,7 @@ body{
 }
 .btn.grad:hover{ filter: brightness(1.1); }
 
-.footer{ margin-top:16px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+.footer{ margin-top:16px; display:flex; gap:10px; justify-content:center; }
 .social{
   text-decoration:none; color:var(--txt);
   padding:12px 14px; border-radius:12px; border:1px solid var(--ring);
