@@ -149,4 +149,27 @@ body{
   .pro-table__head { display:none; }
   .pro-table__row { gap:10px; }
   .col--actions .btn { min-width: 100px; }
+/* ===== Estado de carregamento do botão ===== */
+.btn.loading{ position:relative; opacity:.85; pointer-events:none; }
+.btn.loading::before{
+  content:""; position:absolute; left:10px; top:50%; width:16px; height:16px; margin-top:-8px;
+  border:2px solid rgba(255,255,255,.7); border-top-color: transparent; border-radius:50%;
+  animation: pgspin .8s linear infinite;
+}
+@keyframes pgspin{ to{ transform: rotate(360deg);} }
+
+/* ===== Status dentro do modal (spinner / mensagens) ===== */
+.status{ display:flex; align-items:center; gap:8px; margin-top:8px; font-size:13px; color:var(--muted); }
+.status .spinner{
+  width:16px; height:16px; border:2px solid rgba(255,255,255,.7); border-top-color: transparent; border-radius:50%;
+  animation: pgspin .8s linear infinite;
+}
+.status .check{
+  display:inline-grid; place-items:center; width:18px; height:18px; border-radius:50%;
+  background:rgba(124,92,255,.18); border:1px solid var(--ring); font-weight:800;
+}
+.status.ok{ color:#b7ffd2; }
+.status .error{
+  display:inline-grid; place-items:center; width:18px; height:18px; border-radius:50%;
+  background:rgba(255,79,216,.18); border:1px solid var(--ring); font-weight:800;
 }
